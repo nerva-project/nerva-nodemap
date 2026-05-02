@@ -26,12 +26,7 @@ function toggleTheme() {
 
     if (typeof map !== 'undefined' && typeof map_tiles !== 'undefined') {
         map.removeLayer(map_tiles);
-        map_tiles = L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
-            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery &copy; <a href="https://www.mapbox.com/">Mapbox</a>',
-            maxZoom: 10,
-            id: dark ? 'mapbox/dark-v10' : 'mapbox/streets-v11',
-            accessToken: 'pk.eyJ1IjoicjBiYzBkM3IiLCJhIjoiY2t3em9vYWhkMHd3MDJwcW9tNnN4NGhpNyJ9.OlqG06vAc_7QwbKI2CeuTA'
-        }).addTo(map);
+        map_tiles = makeTileLayer(dark).addTo(map);
     }
 
     var fc = getChartFontColor();
@@ -67,6 +62,15 @@ function onPageLoad()
     });
 }
 
+function makeTileLayer(dark) {
+    return L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+        attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery &copy; <a href="https://www.mapbox.com/">Mapbox</a>',
+        maxZoom: 10,
+        id: dark ? 'mapbox/dark-v10' : 'mapbox/streets-v11',
+        accessToken: 'pk.eyJ1IjoicjBiYzBkM3IiLCJhIjoiY2t3em9vYWhkMHd3MDJwcW9tNnN4NGhpNyJ9.OlqG06vAc_7QwbKI2CeuTA'
+    });
+}
+
 function map_render()
 {
     let latlng = [25, 15], zoom = 2, bounds = L.latLngBounds([-90, -9000], [90, 9000]);
@@ -74,14 +78,9 @@ function map_render()
     map = L.map('map', {'worldCopyJump': true}).setView(latlng, zoom);
     map.setMaxBounds(bounds);
     map.on('drag', function() { map.panInsideBounds(bounds, { animate: false }); });
-    
-    map_tiles = L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
-     attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery &copy; <a href="https://www.mapbox.com/">Mapbox</a>',
-     maxZoom: 10,
-     id: isDark() ? 'mapbox/dark-v10' : 'mapbox/streets-v11',
-     accessToken: 'pk.eyJ1IjoicjBiYzBkM3IiLCJhIjoiY2t3em9vYWhkMHd3MDJwcW9tNnN4NGhpNyJ9.OlqG06vAc_7QwbKI2CeuTA'
-    }).addTo(map);
-    
+
+    map_tiles = makeTileLayer(isDark()).addTo(map);
+
     map.addLayer(map_markers);
 }
 
