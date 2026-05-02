@@ -73,10 +73,7 @@ html.dark-mode a:hover {
 html.dark-mode #map {
     opacity: 1;
 }
-/* Darken only the tile layer, not markers/controls */
-html.dark-mode .leaflet-tile-pane {
-    filter: brightness(0.5) saturate(0.7);
-}
+
 /* Zoom +/- controls */
 html.dark-mode .leaflet-bar a {
     background-color: #2d3538;
