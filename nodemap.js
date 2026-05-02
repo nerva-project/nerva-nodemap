@@ -30,9 +30,22 @@ function toggleTheme() {
     }
 
     var fc = getChartFontColor();
-    if (chart_cc) { chart_cc.options.scales.yAxes[0].ticks.fontColor = fc; chart_cc.update(); }
-    if (chart_cn) { chart_cn.options.scales.xAxes[0].ticks.fontColor = fc; chart_cn.update(); }
-    if (chart_vers) { chart_vers.options.legend.labels.fontColor = fc; chart_vers.update(); }
+    var grad = dark ? gradifyDark : gradify;
+    if (chart_cc) {
+        chart_cc.options.scales.yAxes[0].ticks.fontColor = fc;
+        chart_cc.data.datasets[0].backgroundColor = grad(9);
+        chart_cc.update(0);
+    }
+    if (chart_cn) {
+        chart_cn.options.scales.xAxes[0].ticks.fontColor = fc;
+        chart_cn.data.datasets[0].backgroundColor = grad(5);
+        chart_cn.update(0);
+    }
+    if (chart_vers) {
+        chart_vers.options.legend.labels.fontColor = fc;
+        chart_vers.data.datasets[0].backgroundColor = grad(chart_vers.data.labels.length);
+        chart_vers.update(0);
+    }
 }
 
 function onPageLoad()
@@ -107,8 +120,8 @@ function stats_render()
             }
         }
     });
-    chart_cc.config.data.datasets[0].backgroundColor = gradify(9);
-        
+    chart_cc.config.data.datasets[0].backgroundColor = (isDark() ? gradifyDark : gradify)(9);
+
     chart_cn = new Chart(document.getElementById("continents").getContext('2d'), {
         type: 'bar',
         data: { datasets: [{}] },
@@ -125,8 +138,8 @@ function stats_render()
             }
         }
     });
-    chart_cn.config.data.datasets[0].backgroundColor = gradify(5);
-        
+    chart_cn.config.data.datasets[0].backgroundColor = (isDark() ? gradifyDark : gradify)(5);
+
     chart_vers = new Chart(document.getElementById("version").getContext('2d'), {
         type: 'pie',
         data: { datasets: [{ borderWidth: 1 }] },
@@ -152,7 +165,7 @@ function stats_render()
             }
         }
     });
-    chart_vers.config.data.datasets[0].backgroundColor = gradify(versions.length);
+    chart_vers.config.data.datasets[0].backgroundColor = (isDark() ? gradifyDark : gradify)(versions.length);
     
     // Import data
     
@@ -211,6 +224,22 @@ function gradify(x)
     // generate nerva gradient with x color stops
     let color1 = [85, 168, 191, 1],
         color2 = [99, 88, 145, 1],
+        array = [];
+    for (let i=0; i<=x; i++) {
+        let p = 1 / x * i,
+            w = p * 2 - 1,
+            w1 = (w/1+1) / 2,
+            w2 = 1 - w1;
+        array[i] = "rgba(" + Math.round(color1[0] * w1 + color2[0] * w2) + "," + Math.round(color1[1] * w1 + color2[1] * w2) + "," + Math.round(color1[2] * w1 + color2[2] * w2) + "," + 1 + ")";
+    }
+    return array;
+}
+
+function gradifyDark(x)
+{
+    // darker nerva gradient (75% brightness) for dark mode charts
+    let color1 = [64, 126, 143, 1],
+        color2 = [74, 66, 109, 1],
         array = [];
     for (let i=0; i<=x; i++) {
         let p = 1 / x * i,
