@@ -24,29 +24,10 @@ function toggleTheme() {
     localStorage.setItem('nerva-nodemap-theme', dark ? 'dark' : 'light');
     updateThemeIcons();
 
-    if (typeof map !== 'undefined' && typeof map_tiles !== 'undefined') {
-        map.removeLayer(map_tiles);
-        map_tiles = makeTileLayer(dark).addTo(map);
-    }
-
-    var fc = getChartFontColor();
-    var grad = dark ? gradifyDark : gradify;
-    Chart.defaults.global.defaultFontColor = fc;
-    if (chart_cc) {
-        chart_cc.options.scales.yAxes[0].ticks.fontColor = fc;
-        chart_cc.data.datasets[0].backgroundColor = grad(9);
-        chart_cc.update();
-    }
-    if (chart_cn) {
-        chart_cn.options.scales.xAxes[0].ticks.fontColor = fc;
-        chart_cn.data.datasets[0].backgroundColor = grad(5);
-        chart_cn.update();
-    }
-    if (chart_vers) {
-        chart_vers.options.legend.labels.fontColor = fc;
-        chart_vers.data.datasets[0].backgroundColor = grad(chart_vers.data.labels.length);
-        chart_vers.update();
-    }
+    if (chart_cc) { chart_cc.destroy(); chart_cc = null; }
+    if (chart_cn) { chart_cn.destroy(); chart_cn = null; }
+    if (chart_vers) { chart_vers.destroy(); chart_vers = null; }
+    if (node_count > 0) { stats_render(); }
 }
 
 function onPageLoad()
@@ -76,11 +57,11 @@ function onPageLoad()
     });
 }
 
-function makeTileLayer(dark) {
+function makeTileLayer() {
     return L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
         attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery &copy; <a href="https://www.mapbox.com/">Mapbox</a>',
         maxZoom: 10,
-        id: dark ? 'mapbox/dark-v10' : 'mapbox/streets-v11',
+        id: 'mapbox/streets-v11',
         accessToken: 'pk.eyJ1IjoicjBiYzBkM3IiLCJhIjoiY2t3em9vYWhkMHd3MDJwcW9tNnN4NGhpNyJ9.OlqG06vAc_7QwbKI2CeuTA'
     });
 }
@@ -93,7 +74,7 @@ function map_render()
     map.setMaxBounds(bounds);
     map.on('drag', function() { map.panInsideBounds(bounds, { animate: false }); });
 
-    map_tiles = makeTileLayer(isDark()).addTo(map);
+    map_tiles = makeTileLayer().addTo(map);
 
     map.addLayer(map_markers);
 }
