@@ -54,3 +54,22 @@ body {
 .marker-cluster div {
 	color: rgba(255, 255, 255, 1);
 }
+.navbar-dark .theme-toggle-btn {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* ── Dark mode ── */
+html.dark-mode,
+html.dark-mode body {
+    background-color: #1a1d20;
+    color: #d4d7d9;
+}
+html.dark-mode a {
+    color: #55c8e8;
+}
+html.dark-mode a:hover {
+    color: #7dd8f0;
+}
+html.dark-mode #map {
+    opacity: 1;
+}

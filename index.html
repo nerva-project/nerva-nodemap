@@ -21,6 +21,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js" integrity="sha384-QzN1ywg2QLsf72ZkgRHgjkB/cfI4Dqjg6RJYQUqH6Wm8qp/MvmEYn+2NBsLnhLkr" crossorigin="anonymous"></script>
     
   <link rel="stylesheet" href="nodemap.css">
+  <script>(function(){var d=localStorage.getItem('nerva-nodemap-theme')==='dark';if(d)document.documentElement.classList.add('dark-mode');document.documentElement.style.backgroundColor=d?'#1a1d20':'';})();</script>
   <script src="nodemap.js"></script>
  </head>
  
@@ -29,6 +30,9 @@
   <nav id="navbar" class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
    <div class="container">
     <a href="#" class="navbar-brand"><img src="img/logo.png" alt="Nerva" width="22" height="22"> NERVA Nodemap</a>
+    <a href="#" class="nav-link theme-toggle-btn d-md-none ml-auto" title="Toggle dark/light mode">
+      <i class="fas fa-moon theme-icon"></i>
+    </a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
      <span class="navbar-toggler-icon"></span>
     </button>
@@ -43,6 +47,11 @@
       </li>
      </ul>
      <ul class="navbar-nav ml-auto">
+      <li class="nav-item">
+       <a href="#" class="nav-link theme-toggle-btn" title="Toggle dark/light mode">
+        <i class="fas fa-moon theme-icon"></i>
+       </a>
+      </li>
       <li class="nav-item">
        <font color="#fff">(<strong><span id="count_nodes"></span> nodes </strong> in <strong><span id="count_countries"></span> countries </strong> active in the last 48 hours)</font>
       </li>

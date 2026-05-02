@@ -9,6 +9,37 @@ let node_count = 0, node_cc = [], node_cn = [], node_vers = [], node_ips = [],
     
 const map_icon = new L.Icon({ iconUrl: 'img/marker-nerva.png', shadowUrl: 'img/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
 
+function isDark() { return document.documentElement.classList.contains('dark-mode'); }
+function getChartFontColor() { return isDark() ? '#D4D7D9' : '#000'; }
+
+function updateThemeIcons() {
+    document.querySelectorAll('.theme-icon').forEach(function(icon) {
+        icon.className = (isDark() ? 'fas fa-sun' : 'fas fa-moon') + ' theme-icon';
+    });
+}
+
+function toggleTheme() {
+    var dark = document.documentElement.classList.toggle('dark-mode');
+    document.documentElement.style.backgroundColor = dark ? '#1a1d20' : '';
+    localStorage.setItem('nerva-nodemap-theme', dark ? 'dark' : 'light');
+    updateThemeIcons();
+
+    if (typeof map !== 'undefined' && typeof map_tiles !== 'undefined') {
+        map.removeLayer(map_tiles);
+        map_tiles = L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery &copy; <a href="https://www.mapbox.com/">Mapbox</a>',
+            maxZoom: 10,
+            id: dark ? 'mapbox/dark-v10' : 'mapbox/streets-v11',
+            accessToken: 'pk.eyJ1IjoicjBiYzBkM3IiLCJhIjoiY2t3em9vYWhkMHd3MDJwcW9tNnN4NGhpNyJ9.OlqG06vAc_7QwbKI2CeuTA'
+        }).addTo(map);
+    }
+
+    var fc = getChartFontColor();
+    if (chart_cc) { chart_cc.options.scales.yAxes[0].ticks.fontColor = fc; chart_cc.update(); }
+    if (chart_cn) { chart_cn.options.scales.xAxes[0].ticks.fontColor = fc; chart_cn.update(); }
+    if (chart_vers) { chart_vers.options.legend.labels.fontColor = fc; chart_vers.update(); }
+}
+
 function onPageLoad()
 {
     $.when(jQuery.getJSON("https://api.nerva.one/analytics/fetch/", function(){}).done(function(data) {
@@ -47,7 +78,7 @@ function map_render()
     map_tiles = L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
      attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery &copy; <a href="https://www.mapbox.com/">Mapbox</a>',
      maxZoom: 10,
-     id: 'mapbox/streets-v11',
+     id: isDark() ? 'mapbox/dark-v10' : 'mapbox/streets-v11',
      accessToken: 'pk.eyJ1IjoicjBiYzBkM3IiLCJhIjoiY2t3em9vYWhkMHd3MDJwcW9tNnN4NGhpNyJ9.OlqG06vAc_7QwbKI2CeuTA'
     }).addTo(map);
     
@@ -72,7 +103,7 @@ function stats_render()
                     type: 'logarithmic'
                 }],
                 yAxes: [{
-                    ticks: { fontColor: '#000' }
+                    ticks: { fontColor: getChartFontColor() }
                 }],
             }
         }
@@ -86,7 +117,7 @@ function stats_render()
             legend: { display: false },
             scales: {
                 xAxes: [{
-                    ticks: { fontColor: '#000' },
+                    ticks: { fontColor: getChartFontColor() },
                 }],
                 yAxes: [{
                     display: false,
@@ -206,4 +237,12 @@ function getContinentName (cn) {
 
 $(function () {
     $('[data-toggle="tooltip"]').tooltip();
+
+    document.querySelectorAll('.theme-toggle-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            toggleTheme();
+        });
+    });
+    updateThemeIcons();
 });
