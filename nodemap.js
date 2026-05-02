@@ -130,7 +130,7 @@ function stats_render()
             legend: {
                 position: 'left',
                 labels: {
-                    fontColor: "#000"
+                    fontColor: getChartFontColor()
                 }
             },
             tooltips: {
