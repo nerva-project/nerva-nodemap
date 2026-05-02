@@ -31,20 +31,21 @@ function toggleTheme() {
 
     var fc = getChartFontColor();
     var grad = dark ? gradifyDark : gradify;
+    Chart.defaults.global.defaultFontColor = fc;
     if (chart_cc) {
         chart_cc.options.scales.yAxes[0].ticks.fontColor = fc;
         chart_cc.data.datasets[0].backgroundColor = grad(9);
-        chart_cc.update(0);
+        chart_cc.update();
     }
     if (chart_cn) {
         chart_cn.options.scales.xAxes[0].ticks.fontColor = fc;
         chart_cn.data.datasets[0].backgroundColor = grad(5);
-        chart_cn.update(0);
+        chart_cn.update();
     }
     if (chart_vers) {
         chart_vers.options.legend.labels.fontColor = fc;
         chart_vers.data.datasets[0].backgroundColor = grad(chart_vers.data.labels.length);
-        chart_vers.update(0);
+        chart_vers.update();
     }
 }
 
@@ -100,6 +101,7 @@ function map_render()
 function stats_render()
 {
     let countries = statify(node_cc), continents = statify(node_cn), versions = statify(node_vers);
+    Chart.defaults.global.defaultFontColor = getChartFontColor();
     
     document.getElementById("count_nodes").innerHTML = node_count;
     document.getElementById("count_countries").innerHTML = countries.length;

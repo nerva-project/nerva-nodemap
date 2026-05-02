@@ -73,3 +73,25 @@ html.dark-mode a:hover {
 html.dark-mode #map {
     opacity: 1;
 }
+/* Brighten only the tile layer, not markers/controls */
+html.dark-mode .leaflet-tile-pane {
+    filter: brightness(1.25);
+}
+/* Zoom +/- controls */
+html.dark-mode .leaflet-bar a {
+    background-color: #2d3538;
+    color: #d4d7d9;
+    border-color: #3d4548;
+}
+html.dark-mode .leaflet-bar a:hover {
+    background-color: #3d4548;
+    color: #fff;
+}
+/* Attribution bar */
+html.dark-mode .leaflet-control-attribution {
+    background-color: rgba(26, 29, 32, 0.85) !important;
+    color: #7a8590;
+}
+html.dark-mode .leaflet-control-attribution a {
+    color: #55c8e8;
+}
