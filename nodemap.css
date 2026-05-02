@@ -72,6 +72,7 @@ html.dark-mode a:hover {
 }
 html.dark-mode #map {
     opacity: 1;
+    filter: brightness(0.80);
 }
 
 /* Zoom +/- controls */
