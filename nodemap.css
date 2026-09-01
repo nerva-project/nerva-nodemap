@@ -4,49 +4,35 @@
  * No Bootstrap, no jQuery: the map page only needs its own tokens.
  */
 
-/* ---- self-hosted fonts (latin subsets) --------------------------------- */
+/* ---- self-hosted fonts (latin subsets) ---------------------------------
+ *
+ * One file per family: they are variable fonts (Inter wght 100-900,
+ * Space Grotesk 300-700, JetBrains Mono 400-800), so a single face with a
+ * weight range serves every weight used on the page. Licenses: fonts/OFL.txt. */
 
 @font-face {
   font-family: 'Inter';
   font-style: normal;
-  font-weight: 400;
+  font-weight: 100 900;
   font-display: swap;
-  src: url('fonts/inter-latin-400.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('fonts/inter-latin-600.woff2') format('woff2');
+  src: url('fonts/inter-latin-var.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
   font-family: 'Space Grotesk';
   font-style: normal;
-  font-weight: 500;
+  font-weight: 300 700;
   font-display: swap;
-  src: url('fonts/space-grotesk-latin-500.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Space Grotesk';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('fonts/space-grotesk-latin-700.woff2') format('woff2');
+  src: url('fonts/space-grotesk-latin-var.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
   font-family: 'JetBrains Mono';
   font-style: normal;
-  font-weight: 400;
+  font-weight: 400 800;
   font-display: swap;
-  src: url('fonts/jetbrains-mono-latin-400.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'JetBrains Mono';
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url('fonts/jetbrains-mono-latin-500.woff2') format('woff2');
+  src: url('fonts/jetbrains-mono-latin-var.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 /* ---- design tokens (mirrors nerva.one theme v4.1) ---------------------- */
@@ -79,11 +65,15 @@
   --ease-out:         cubic-bezier(.22, 1, .36, 1);
   --dur:              .32s;
 
-  --map-frame-bg:     #e8eef4;
+  --map-frame-bg:     #e8eef4; /* dark value below: keep in sync with the
+                                #0b111b literal in the inline <head> scripts
+                                of index.html and nodemap.html */
 }
 
 html.dark-mode {
-  --clr-bg:           #0b111b;
+  --clr-bg:           #0b111b; /* also hardcoded pre-paint by the inline <head>
+                                scripts of both pages; nodemap.js reads this
+                                token instead of repeating it */
   --clr-surface:      #131e2e;
   --clr-surface-2:    #182538;
   --clr-heading:      #eef3f9;
@@ -255,11 +245,13 @@ html.dark-mode .theme-toggle .icon-moon { display: none; }
   z-index: 1;
 }
 
-/* embed variant: fill the viewport, no scrolling page around it */
+/* embed variant: fill the viewport, no scrolling page around it.
+ * dvh (with a vh fallback) avoids the jump under mobile Safari's
+ * collapsing toolbar when the page is inside the nerva.one iframe. */
 body.embed { overflow: hidden; }
-body.embed #map { height: 100vh; }
+body.embed #map { height: 100vh; height: 100dvh; }
 body.embed .page { padding: 0; max-width: none; }
-body.embed .map-card { border-radius: 0; border: none; box-shadow: none; height: 100vh; }
+body.embed .map-card { border-radius: 0; border: none; box-shadow: none; height: 100vh; height: 100dvh; }
 
 .map-overlay {
   position: absolute;
@@ -290,6 +282,11 @@ body.embed .map-card { border-radius: 0; border: none; box-shadow: none; height:
 
 .map-overlay .chip .mono { color: var(--clr-heading); }
 
+/* Dark mode dims the tile pane only: the basemap keeps its geography and
+ * markers, clusters and controls keep full contrast. */
+html .leaflet-tile-pane { transition: filter var(--dur) var(--ease-out); }
+html.dark-mode .leaflet-tile-pane { filter: brightness(.8); }
+
 .map-status {
   position: absolute;
   inset: 0;
@@ -305,9 +302,29 @@ body.embed .map-card { border-radius: 0; border: none; box-shadow: none; height:
   text-align: center;
   padding: 20px;
   transition: opacity var(--dur) var(--ease-out);
+  /* Never block the map: tiles and markers do not depend on the node
+   * list, so the map stays usable while a status is up. Interactive
+   * children (the retry button) opt back in. */
+  pointer-events: none;
 }
 
-.map-status.hidden { opacity: 0; pointer-events: none; }
+.map-status.hidden { opacity: 0; }
+
+.map-status .retry-btn {
+  pointer-events: auto;
+  margin-top: 2px;
+  padding: 9px 22px;
+  border-radius: 999px;
+  border: 1px solid var(--nv-teal);
+  background: var(--nv-teal);
+  color: #fff;
+  font: 600 14px/1 'Inter', system-ui, sans-serif;
+  cursor: pointer;
+  transition: background-color var(--dur) var(--ease-out),
+              transform .18s var(--ease-out);
+}
+
+.map-status .retry-btn:hover { background: var(--nv-teal-bright); transform: translateY(-1px); }
 
 .map-status .spinner {
   width: 28px;
@@ -418,6 +435,10 @@ body.embed .map-card { border-radius: 0; border: none; box-shadow: none; height:
 
 .leaflet-control-attribution a { color: var(--clr-link) !important; }
 
+/* the attribution sits over the (still light) dimmed basemap in dark mode,
+ * where the muted grey reads borderline: lift it to the body text color */
+html.dark-mode .leaflet-control-attribution { color: var(--clr-text) !important; }
+
 .leaflet-popup-content-wrapper {
   border-radius: 12px !important;
   background: var(--clr-surface) !important;
@@ -446,7 +467,6 @@ body.embed .map-card { border-radius: 0; border: none; box-shadow: none; height:
 
 .leaflet-popup-content dt { color: var(--clr-muted); }
 .leaflet-popup-content dd { margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
-.leaflet-popup-content dd.ok { color: var(--nv-green); }
 
 /* marker clusters, tinted with the brand gradient */
 
@@ -470,6 +490,40 @@ body.embed .map-card { border-radius: 0; border: none; box-shadow: none; height:
 }
 
 /* ---- responsive ------------------------------------------------------------- */
+
+/* Desktop dashboard: trim the surrounding chrome and let the map flex into
+ * whatever height is left, so the whole page fits one 1080p screen without
+ * scrolling, map included, footer visible. Scoped to the dashboard: the
+ * embed page keeps its own full-viewport layout. */
+@media (min-width: 900px) and (min-height: 700px) {
+  body:not(.embed) {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  body:not(.embed) .page {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 18px clamp(16px, 4vw, 32px) 16px;
+  }
+
+  .stats-grid { flex: none; margin-top: 14px; gap: 14px; }
+  .stat-card { padding: 13px 16px 12px; }
+  .stat-card h2 { margin-bottom: 9px; }
+  .chart-wrap { height: clamp(140px, 17vh, 210px); }
+  .stat-card--countries .chart-wrap { height: clamp(150px, 19vh, 230px); }
+  .stat-note { margin-top: 8px; font-size: 11.5px; }
+  .site-footer { flex: none; margin-top: 14px; padding: 11px clamp(16px, 4vw, 32px); }
+
+  /* map takes everything that is left, with a generous floor so shorter
+   * laptops scroll a little rather than squashing the map */
+  .map-card { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 420px; }
+  #map { flex: 1 1 auto; height: auto; min-height: 0; }
+}
 
 @media (max-width: 900px) {
   .stats-grid { grid-template-columns: 1fr; }

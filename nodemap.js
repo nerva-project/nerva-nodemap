@@ -22,25 +22,24 @@
     var API_URL = 'https://api.nerva.one/analytics/fetch/';
     var THEME_KEY = 'nerva-nodemap-theme';
 
-    /* Mapbox publishable token: the pk. prefix marks a key that is safe to
-     * embed in client-side code by design, and this one has been public in
-     * this repository since 2019. GitHub push protection still pattern
-     * matches the literal, so it is stored in two parts here; this grants
-     * no server-side access of any kind. */
-    var MAPBOX_TOKEN = [
-        'pk.',
-        'eyJ1IjoicjBiYzBkM3Ii',
-        'LCJhIiOiY2t3em9vYWhkMHd3MDJwcW9tNnN4NGhpNyJ9',
-        '.OlqG06vAc_7QwbKI2CeuTA'
-    ].join('');
-    var TILES = {
-        light: 'mapbox/streets-v11',
-        dark: 'mapbox/dark-v11'
-    };
+    /* Mapbox publishable token (pk. keys are designed to be public). This one
+     * is scoped to styles:tiles + styles:read and restricted to the nerva.one
+     * origin, and is deliberately written as a single literal: a split-string
+     * trick hid a typo that 401'd every tile request, and obfuscation buys
+     * nothing for a key that ships in every page load anyway. If push
+     * protection flags it, dismiss the alert: it is a false positive by
+     * design. */
+    var MAPBOX_TOKEN = 'pk.eyJ1IjoicjBiYzBkM3IiLCJhIjoiY210aGtkYmYzMDcyMTJ6b3Q1YzlqOGN3NyJ9.zqhhEiYkttJ64pPot8MkvQ';
+
+    /* Both themes keep the streets-v11 basemap; dark mode dims the tile pane
+     * instead of swapping to dark tiles (see the .leaflet-tile-pane rule in
+     * nodemap.css), which keeps the geography readable and the markers at
+     * full contrast. */
+    var TILE_URL = 'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}';
     var TILE_OPTIONS = {
         attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery &copy; <a href="https://www.mapbox.com/">Mapbox</a>',
-        maxZoom: 18,
-        id: TILES.light,
+        maxZoom: 15,
+        id: 'mapbox/streets-v11',
         accessToken: MAPBOX_TOKEN
     };
 
@@ -50,7 +49,7 @@
 
     var CONTINENTS = {
         'AF': 'Africa', 'NA': 'North America', 'SA': 'South America',
-        'EU': 'Europe', 'OC': 'Oceania', 'AS': 'Asia'
+        'EU': 'Europe', 'OC': 'Oceania', 'AS': 'Asia', 'AN': 'Antarctica'
     };
 
     var COUNTRIES = {
@@ -83,39 +82,27 @@
         return document.documentElement.classList.contains('dark-mode');
     }
 
-    /* Runs from the inline <head> script on both pages; kept here too so
-     * the dashboard toggle and the parent iframe (?theme=) share one
-     * resolution rule: URL parameter, then saved choice, then OS. */
-    function resolveTheme() {
-        var param = new URLSearchParams(window.location.search).get('theme');
-        var saved = null;
-        try { saved = localStorage.getItem(THEME_KEY); } catch (e) { /* private mode */ }
-        if (param !== null) return param === 'dark';
-        if (saved !== null) return saved === 'dark';
-        return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
+    /* The theme is resolved before first paint by the inline <head> script
+     * of each page (URL parameter, then saved choice, then OS). This file
+     * only reacts to the resolved state. */
 
     function applyPageTheme(dark, persist) {
         document.documentElement.classList.toggle('dark-mode', dark);
-        document.documentElement.style.backgroundColor = dark ? '#0b111b' : '';
+        /* Mirror of --clr-bg in dark mode: read from the stylesheet rather
+         * than hardcoding the hex again (the inline <head> scripts keep a
+         * literal because they must not depend on the CSS having loaded). */
+        var darkBg = getComputedStyle(document.documentElement).getPropertyValue('--clr-bg').trim() || '#0b111b';
+        document.documentElement.style.backgroundColor = dark ? darkBg : '';
         if (persist) {
             try { localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light'); } catch (e) { /* ignore */ }
         }
-        if (tileLayer) {
-            tileLayer.setUrl(tileUrl(dark));
-        }
-        updateThemeIcons();
+        syncThemeButtons();
         refreshCharts();
     }
 
-    function tileUrl(dark) {
-        return 'https://api.mapbox.com/styles/v1/' + (dark ? TILES.dark : TILES.light) +
-            '/tiles/{z}/{x}/{y}?access_token=' + MAPBOX_TOKEN;
-    }
-
-    function updateThemeIcons() {
-        document.querySelectorAll('.theme-icon').forEach(function (icon) {
-            icon.classList.toggle('is-dark', isDark());
+    function syncThemeButtons() {
+        document.querySelectorAll('.theme-toggle').forEach(function (button) {
+            button.setAttribute('aria-pressed', isDark() ? 'true' : 'false');
         });
     }
 
@@ -123,9 +110,22 @@
     /* data                                                                */
     /* ------------------------------------------------------------------ */
 
+    var FETCH_TIMEOUT = 15000;
+
     function fetchNodes() {
-        return fetch(API_URL, { headers: { 'Accept': 'application/json' } })
+        /* Abort a hanging request instead of leaving the spinner up forever. */
+        var controller = new AbortController();
+        var timer = setTimeout(function () { controller.abort(); }, FETCH_TIMEOUT);
+        var settled = false;
+        function clearTimer() {
+            if (!settled) { settled = true; clearTimeout(timer); }
+        }
+        return fetch(API_URL, {
+            headers: { 'Accept': 'application/json' },
+            signal: controller.signal
+        })
             .then(function (res) {
+                clearTimer();
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 return res.json();
             })
@@ -133,6 +133,13 @@
                 var result = data && data.result;
                 if (!Array.isArray(result)) throw new Error('unexpected payload');
                 return result;
+            })
+            .catch(function (error) {
+                clearTimer();
+                if (error && error.name === 'AbortError') {
+                    throw new Error('timed out');
+                }
+                throw error;
             });
     }
 
@@ -144,20 +151,38 @@
         var el = statusOverlay();
         if (!el) return;
         if (message) {
+            /* The dashboard ships with the loading text already in the DOM,
+             * so skip the rewrite (and the duplicate live-region
+             * announcement) when the same status is already showing. */
+            if (!el.classList.contains('hidden') && el.textContent === message) return;
             el.innerHTML = '';
-            var text = document.createElement('span');
-            text.textContent = message;
+            el.classList.toggle('error', Boolean(isError));
             if (!isError) {
                 var spinner = document.createElement('div');
                 spinner.className = 'spinner';
+                spinner.setAttribute('aria-hidden', 'true');
                 el.appendChild(spinner);
-            } else {
-                el.classList.add('error');
             }
+            var text = document.createElement('span');
+            text.textContent = message;
             el.appendChild(text);
+            if (isError) {
+                var retry = document.createElement('button');
+                retry.type = 'button';
+                retry.className = 'retry-btn';
+                retry.textContent = 'Retry';
+                retry.addEventListener('click', loadNodes);
+                el.appendChild(retry);
+            }
             el.classList.remove('hidden');
         } else {
             el.classList.add('hidden');
+            el.classList.remove('error');
+            /* Clear the stale text out of the live region once the fade-out
+             * is done, so the next status starts from a clean region. */
+            setTimeout(function () {
+                if (el.classList.contains('hidden')) el.innerHTML = '';
+            }, 400);
         }
     }
 
@@ -178,10 +203,7 @@
             attributionControl: true
         });
 
-        var options = Object.assign({}, TILE_OPTIONS, {
-            id: isDark() ? TILES.dark : TILES.light
-        });
-        tileLayer = L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', options);
+        tileLayer = L.tileLayer(TILE_URL, TILE_OPTIONS);
         tileLayer.addTo(map);
 
         cluster = L.markerClusterGroup({
@@ -236,9 +258,14 @@
     /* statistics                                                          */
     /* ------------------------------------------------------------------ */
 
+    /* Counts values, most frequent first. Falsy values are skipped: the
+     * API reports empty cc/cn/lat/long when geolocation fails, and such
+     * nodes must not become a phantom country or a nameless chart slice
+     * (the map already skips them, since parseFloat('') is NaN). */
     function statify(values) {
         var counts = Object.create(null);
         values.forEach(function (value) {
+            if (!value) return;
             counts[value] = (counts[value] || 0) + 1;
         });
         return Object.keys(counts)
@@ -333,7 +360,9 @@
                         },
                         y: {
                             grid: { display: false },
-                            ticks: { color: theme.text }
+                            /* autoSkip would hide every other country label
+                             * at the one-screen chart height. */
+                            ticks: { color: theme.text, autoSkip: false }
                         }
                     }
                 }
@@ -422,18 +451,8 @@
     /* boot                                                                */
     /* ------------------------------------------------------------------ */
 
-    function onReady() {
-        var toggles = document.querySelectorAll('.theme-toggle');
-        toggles.forEach(function (button) {
-            button.addEventListener('click', function () {
-                applyPageTheme(!isDark(), true);
-            });
-        });
-        updateThemeIcons();
-
-        initMap();
+    function loadNodes() {
         showStatus('Loading node list…', false);
-
         fetchNodes()
             .then(function (result) {
                 nodes = result;
@@ -444,8 +463,24 @@
             })
             .catch(function (error) {
                 console.error('nodemap: node list unavailable', error);
-                showStatus('The node list is unavailable right now. Please retry in a moment.', true);
+                var detail = error && error.message === 'timed out'
+                    ? 'The request timed out.'
+                    : 'Please retry in a moment.';
+                showStatus('The node list is unavailable right now. ' + detail, true);
             });
+    }
+
+    function onReady() {
+        var toggles = document.querySelectorAll('.theme-toggle');
+        toggles.forEach(function (button) {
+            button.addEventListener('click', function () {
+                applyPageTheme(!isDark(), true);
+            });
+        });
+        syncThemeButtons();
+
+        initMap();
+        loadNodes();
     }
 
     if (document.readyState === 'loading') {

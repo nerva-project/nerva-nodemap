@@ -14,9 +14,14 @@
   <link rel="stylesheet" href="vendor/MarkerCluster.Default.css">
   <link rel="stylesheet" href="nodemap.css">
 
+  <link rel="preload" href="fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/jetbrains-mono-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+
   <!-- Embed page for the nerva.one iframe: the ?theme= parameter set by
        the parent site wins, so the map follows the site theme. No stats
-       and no Chart.js are loaded here; the map is the whole page. -->
+       and no Chart.js are loaded here; the map is the whole page.
+       Keep the #0b111b literal in sync with --clr-bg (dark) in nodemap.css;
+       it must stay inline because it runs before the first paint. -->
   <script>(function(){var p=new URLSearchParams(window.location.search),u=p.get('theme'),s;try{s=localStorage.getItem('nerva-nodemap-theme')}catch(e){}var d=u!==null?u==='dark':(s!==null?s==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('dark-mode');document.documentElement.style.backgroundColor=d?'#0b111b':'';})();</script>
 
   <script src="vendor/leaflet.js" defer></script>
