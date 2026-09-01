@@ -344,12 +344,16 @@ html.dark-mode .leaflet-tile-pane { filter: brightness(.8); }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* minmax(0, 1fr), not 1fr: a bare 1fr keeps a min-content floor, so the
+   * canvas width Chart.js leaves behind after a resize overflows the grid. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
   margin-top: 20px;
+  min-width: 0;
 }
 
 .stat-card {
+  min-width: 0;            /* see .stats-grid */
   background: var(--clr-surface);
   border: 1px solid var(--clr-border-light);
   border-radius: var(--radius-lg);
@@ -377,7 +381,7 @@ html.dark-mode .leaflet-tile-pane { filter: brightness(.8); }
   border-radius: 999px;
 }
 
-.chart-wrap { position: relative; height: 240px; }
+.chart-wrap { position: relative; height: 240px; min-width: 0; overflow: hidden; }
 
 .stat-note {
   margin: 10px 0 0;

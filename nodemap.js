@@ -36,6 +36,7 @@
      * nodemap.css), which keeps the geography readable and the markers at
      * full contrast. */
     var TILE_URL = 'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}';
+
     var TILE_OPTIONS = {
         attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery &copy; <a href="https://www.mapbox.com/">Mapbox</a>',
         maxZoom: 15,
@@ -194,14 +195,23 @@
         map = L.map('map', {
             center: [25, 15],
             zoom: 2,
-            minZoom: 2,
+            minZoom: 1,
             maxZoom: 15,
             worldCopyJump: true,
             maxBounds: L.latLngBounds([-85, -540], [85, 540]),
             maxBoundsViscosity: 0.8,
-            zoomControl: true,
+            zoomControl: false,   /* added below; the default top-left position sits under .map-overlay */
             attributionControl: true
         });
+
+        L.control.zoom({ position: 'topright' }).addTo(map);
+
+        /* The world is 256 * 2^z px wide, so zoom from the card width: a
+         * fixed zoom 2 showed under half the world on a phone. Round, not
+         * floor, or mid-width cards repeat the world; not fitBounds(), which
+         * also fits the height and zooms out far enough to repeat it. */
+        var fitZoom = Math.round(Math.log(map.getSize().x / 256) / Math.LN2);
+        map.setView([25, 15], Math.max(map.getMinZoom(), fitZoom), { animate: false });
 
         tileLayer = L.tileLayer(TILE_URL, TILE_OPTIONS);
         tileLayer.addTo(map);
